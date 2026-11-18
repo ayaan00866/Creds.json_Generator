@@ -3,76 +3,235 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WhatsApp Pairing</title>
+<title>WhatsApp Creds.json</title>
 <style>
-  :root { --bg:#f6f7f9; --card:#fff; --text:#1a1d21; --muted:#667085; --line:#e4e7ec; --accent:#16a34a; --err:#dc2626; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg:#0f1114; --card:#1a1d21; --text:#f1f3f5; --muted:#98a2b3; --line:#2a2f36; --accent:#22c55e; --err:#f87171; }
+  :root{
+    --bg:#030817; --bg2:#06112e; --card:rgba(10,24,62,.62); --line:rgba(96,165,250,.28);
+    --text:#eef4ff; --muted:#9fb0d3; --accent:#3b82f6; --accent2:#38bdf8; --glow:rgba(59,130,246,.5);
+    --err:#f87171; --ok:#4ade80; --r:10px;
   }
-  * { box-sizing: border-box; }
-  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px;
-         background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
-  .card { width:100%; max-width:420px; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:24px; }
-  h1 { font-size:20px; margin:0 0 4px; }
-  p.sub { margin:0 0 16px; color:var(--muted); font-size:14px; }
+  *{box-sizing:border-box}
+  html{background:var(--bg)}
+  body{margin:0;min-height:100vh;color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:radial-gradient(420px 320px at 100% 0%,rgba(56,189,248,.16),transparent 70%),
+               radial-gradient(420px 420px at 0% 55%,rgba(59,130,246,.14),transparent 70%),
+               linear-gradient(180deg,var(--bg2),var(--bg));overflow-x:hidden}
+  .wrap{max-width:520px;margin:0 auto;padding:18px 14px 0}
+  .grad{background:linear-gradient(90deg,var(--accent2),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
 
-  .tabs { display:flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:18px; }
-  .tabs button { flex:1; padding:10px; border:0; background:transparent; color:var(--muted); font-size:14px; font-weight:600; cursor:pointer; }
-  .tabs button.active { background:var(--accent); color:#fff; }
+  /* Header: logo | title | server badge (one row like the image) */
+  header{display:flex;align-items:center;gap:10px}
+  .logo{width:50px;height:50px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;
+    background:radial-gradient(circle at 35% 30%,#60a5fa,#1d4ed8);box-shadow:0 0 0 3px rgba(59,130,246,.18),0 0 22px var(--glow)}
+  .logo svg{width:28px;height:28px}
+  .brand{flex:1;min-width:0;border-left:1px solid var(--line);padding-left:10px}
+  .brand h1{margin:0;font-size:17px;line-height:1.15;font-weight:800}
+  .tag{display:flex;align-items:center;gap:6px;margin-top:4px;color:var(--muted);font-size:11px;white-space:nowrap}
+  .tag::before,.tag::after{content:"";height:1px;width:14px;background:var(--line)}
+  .server{flex-shrink:0;border:1px solid var(--line);border-radius:8px;padding:5px 8px;background:rgba(8,20,52,.7)}
+  .server b{display:flex;align-items:center;gap:5px;font-size:10.5px}
+  .server b i{width:7px;height:7px;border-radius:50%;background:var(--accent2);box-shadow:0 0 8px var(--accent2)}
+  .server small{display:block;color:var(--muted);font-size:8.5px;margin-top:2px}
 
-  label { font-size:13px; color:var(--muted); }
-  input { width:100%; margin:6px 0 14px; padding:12px; font-size:16px; border-radius:10px;
-          border:1px solid var(--line); background:transparent; color:var(--text); }
-  button.go { width:100%; padding:12px; font-size:16px; font-weight:600; border:0; border-radius:10px;
-           background:var(--accent); color:#fff; cursor:pointer; }
-  button.go:disabled { opacity:.6; cursor:default; }
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 14px;margin-top:16px;
+    backdrop-filter:blur(12px);box-shadow:0 12px 36px rgba(0,0,0,.4),0 0 24px rgba(59,130,246,.12)}
+  .head{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+  .head svg{width:32px;height:36px;flex-shrink:0;filter:drop-shadow(0 0 8px var(--glow))}
+  .head h2{margin:0;font-size:18px}
+  .head p{margin:3px 0 0;color:#c7d4ef;font-size:12px}
 
-  #result { display:none; margin-top:20px; text-align:center; }
-  #code { font-size:32px; font-weight:700; letter-spacing:3px; font-family:ui-monospace,Menlo,monospace; margin:8px 0; }
-  #qrWrap { display:none; margin:12px auto; }
-  #qrWrap img { width:220px; height:220px; border-radius:12px; border:1px solid var(--line); background:#fff; padding:8px; }
+  .tabs{display:flex;border:1px solid var(--line);border-radius:8px;background:rgba(4,12,34,.6);margin-bottom:14px;padding:3px}
+  .tabs button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border:0;border-radius:6px;
+    background:transparent;color:#c7d4ef;font-size:13px;font-weight:600;cursor:pointer;transition:.2s}
+  .tabs button svg{width:16px;height:16px}
+  .tabs button.active{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 0 14px var(--glow)}
 
-  .copy { width:auto; padding:6px 14px; font-size:13px; background:transparent; color:var(--accent); border:1px solid var(--accent); border-radius:10px; cursor:pointer; }
-  ol { text-align:left; color:var(--muted); font-size:13px; padding-left:18px; line-height:1.6; }
-  #status { margin-top:12px; font-size:14px; }
-  .err { color:var(--err); } .ok { color:var(--accent); }
-  .warn { margin-top:18px; font-size:12px; color:var(--muted); }
+  .lbl{display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:7px}
+  .lbl span{color:#c7d4ef} .lbl svg{width:15px;height:15px;color:var(--accent2)}
+  .phone input{width:100%;border:1px solid var(--line);border-radius:8px;background:rgba(4,12,34,.6);color:var(--text);
+    font-size:14px;padding:10px 12px;outline:none}
+  .phone input:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(56,189,248,.15)}
+  .phone input::placeholder{color:#7d8db0}
+  .hint{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:11px;margin:7px 0 14px}
+
+  button.go{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;position:relative;padding:11px 44px;border:0;border-radius:8px;
+    font-size:15px;font-weight:700;color:#fff;cursor:pointer;background:linear-gradient(90deg,#2563eb,#3b82f6 50%,#38bdf8);
+    box-shadow:0 0 18px var(--glow),inset 0 1px 0 rgba(255,255,255,.25)}
+  button.go:disabled{opacity:.6;cursor:default}
+  button.go .arr{position:absolute;right:6px;width:28px;height:28px;border-radius:6px;background:#06122e;display:grid;place-items:center}
+  .secure{display:flex;align-items:center;gap:8px;color:#c7d4ef;font-size:11px;margin-top:14px}
+  .secure::before,.secure::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  #status{margin-top:10px;font-size:12px;text-align:center}
+  .err{color:var(--err)} .ok{color:var(--ok)}
+  #result{display:none;margin-top:14px;text-align:center;border:1px dashed var(--line);border-radius:8px;padding:14px;background:rgba(4,12,34,.5)}
+  #code{font-size:24px;font-weight:800;letter-spacing:3px;font-family:ui-monospace,Menlo,monospace;margin:6px 0 10px;color:var(--accent2)}
+  #qrWrap{display:none;margin:10px auto}
+  #qrWrap img{width:190px;height:190px;border-radius:8px;background:#fff;padding:6px}
+  .copy{padding:6px 14px;font-size:12px;background:transparent;color:var(--accent2);border:1px solid var(--accent2);border-radius:6px;cursor:pointer}
+  #result ol{text-align:left;color:var(--muted);font-size:12px;padding-left:18px;line-height:1.6;margin:10px 0 0}
+
+  /* How it works: 3 steps in one row like the image */
+  .how h3{text-align:center;margin:0 0 4px;font-size:16px}
+  .steps{display:flex;align-items:flex-start;justify-content:space-between}
+  .step{flex:1;text-align:center;min-width:0}
+  .ic{position:relative;width:42px;height:42px;margin:14px auto 6px;border-radius:50%;display:grid;place-items:center;
+    background:rgba(59,130,246,.12);border:1px solid var(--line)}
+  .ic svg{width:21px;height:21px;color:var(--accent2)}
+  .ic em{position:absolute;top:-9px;left:50%;transform:translateX(-50%);width:17px;height:17px;border-radius:50%;
+    background:linear-gradient(135deg,var(--accent2),var(--accent));color:#06122e;font-style:normal;font-weight:800;font-size:10px;display:grid;place-items:center}
+  .step b{display:block;font-size:11.5px} .step p{margin:3px 0 0;color:var(--muted);font-size:10px;line-height:1.3}
+  .chev{color:var(--accent2);font-size:16px;margin-top:26px}
+
+  /* Quick links: 4 in one row like the image */
+  .links{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:14px}
+  .links button{display:flex;align-items:center;gap:5px;text-align:left;padding:7px 6px;border-radius:8px;border:1px solid var(--line);
+    background:rgba(8,20,52,.65);color:var(--text);cursor:pointer;min-width:0}
+  .links svg{width:18px;height:18px;color:var(--accent2);flex-shrink:0}
+  .links span{min-width:0}
+  .links b{display:block;font-size:9.5px;line-height:1.2} .links small{display:block;color:var(--muted);font-size:8.5px}
+
+  .brandline{display:flex;align-items:center;gap:8px;margin:22px 0 6px;font-size:14px;font-weight:800;white-space:nowrap}
+  .brandline::before,.brandline::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--accent))}
+  .brandline::after{background:linear-gradient(90deg,var(--accent),transparent)}
+  .motto{text-align:center;font-style:italic;color:#c7d4ef;font-size:11px;margin:0}
+  footer{margin-top:20px;border-top:1px solid var(--line);background:rgba(3,8,24,.75)}
+  footer div{max-width:520px;margin:0 auto;padding:12px 14px;display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:10px}
+  footer span:last-child{color:#c7d4ef;white-space:nowrap}
+
+  .modal{position:fixed;inset:0;background:rgba(2,6,20,.75);display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
+  .modal.show{display:flex}
+  .modal .box{max-width:400px;width:100%;background:#0a1838;border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:0 0 30px var(--glow)}
+  .modal h4{margin:0 0 10px;font-size:16px} .modal .body{color:#c7d4ef;font-size:13px;line-height:1.7}
+  .modal .body ol{padding-left:18px;margin:0}
+  .modal .close{margin-top:14px;width:100%;padding:10px;border:0;border-radius:6px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
+
+  /* ===== Animated background (sirf yahi animate hota hai) ===== */
+  body{background:#020617}
+  .bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 115%,#0c2a6e 0%,#05123a 42%,#020617 78%)}
+  .aurora{position:absolute;inset:-25%;filter:blur(70px);opacity:.8}
+  .aurora span{position:absolute;border-radius:50%;mix-blend-mode:screen}
+  .a1{width:70vmax;height:32vmax;left:-5%;top:10%;background:radial-gradient(closest-side,rgba(37,99,235,.85),transparent);animation:aur1 18s ease-in-out infinite alternate}
+  .a2{width:60vmax;height:28vmax;right:-10%;top:30%;background:radial-gradient(closest-side,rgba(14,165,233,.7),transparent);animation:aur2 22s ease-in-out infinite alternate}
+  .a3{width:55vmax;height:26vmax;left:15%;bottom:5%;background:radial-gradient(closest-side,rgba(99,102,241,.65),transparent);animation:aur3 26s ease-in-out infinite alternate}
+  .a4{width:40vmax;height:20vmax;right:20%;top:-5%;background:radial-gradient(closest-side,rgba(45,212,191,.35),transparent);animation:aur4 20s ease-in-out infinite alternate}
+  .bg::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(2,6,23,.75) 100%)}
+  #fx{position:absolute;inset:0;width:100%;height:100%}
+  @keyframes aur1{to{transform:translate(25vw,18vh) rotate(25deg) scale(1.2)}}
+  @keyframes aur2{to{transform:translate(-30vw,-12vh) rotate(-20deg) scale(1.15)}}
+  @keyframes aur3{to{transform:translate(18vw,-25vh) rotate(30deg) scale(.9)}}
+  @keyframes aur4{to{transform:translate(-20vw,30vh) rotate(-35deg) scale(1.3)}}
+
+  /* ===== Glassmorphism ===== */
+  .wrap{position:relative;z-index:1;padding-bottom:20px}
+  .card,.server,.links button,.tabs,.phone input,#result{
+    background:rgba(255,255,255,.035)!important;border:1px solid rgba(255,255,255,.18)!important;
+    backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+  .modal .box{background:rgba(8,20,52,.55)!important;border:1px solid rgba(255,255,255,.18)!important;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  .card{box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 0 0 1px rgba(56,189,248,.06)!important}
+  .card *,.links *{text-shadow:0 1px 3px rgba(0,0,0,.6)}
+  .ic{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16)}
+  .modal{background:rgba(2,6,20,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  .links button:hover{border-color:rgba(56,189,248,.6)!important}
+
+  /* ===== Developer section ===== */
+  .dev-top{display:flex;align-items:center;gap:12px}
+  .avatar{width:52px;height:52px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;font-size:22px;font-weight:800;color:#fff;
+    background:linear-gradient(135deg,#38bdf8,#2563eb);box-shadow:0 0 0 3px rgba(255,255,255,.12),0 0 20px var(--glow)}
+  .dev h3{margin:0;font-size:17px;display:flex;align-items:center;gap:8px}
+  .badge{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(56,189,248,.18);color:#7dd3fc;border:1px solid rgba(56,189,248,.35)}
+  .dev-top p{margin:3px 0 0;color:var(--muted);font-size:11.5px}
+  .bio{color:#c7d4ef;font-size:12.5px;line-height:1.65;margin:12px 0}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chips span{font-size:10.5px;padding:4px 9px;border-radius:6px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:#dbe7ff}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
+  .stats div{text-align:center;padding:8px 4px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}
+  .stats b{display:block;font-size:15px;color:#7dd3fc} .stats small{color:var(--muted);font-size:10px}
+  .credit{text-align:center;color:var(--muted);font-size:11px;margin:16px 0 0}
+  .credit b{color:#7dd3fc}
+
+  @media (max-width:360px){
+    .brand h1{font-size:15px} .server small{display:none}
+    .links{grid-template-columns:1fr 1fr}
+    .links b{font-size:11px} .links small{font-size:9.5px}
+  }
 </style>
 </head>
 <body>
-<div class="card">
-  <h1>WhatsApp Pairing</h1>
-  <p class="sub">Code ya QR se link karo, creds.json aapke WhatsApp par aa jayega.</p>
-
-  <div class="tabs">
-    <button id="tabCode" class="active">Pairing Code</button>
-    <button id="tabQr">QR Code</button>
-  </div>
-
-  <div id="codeForm">
-    <label for="num">Phone number (country code ke saath, sirf digits)</label>
-    <input id="num" type="tel" inputmode="numeric" placeholder="919876543210" autocomplete="tel">
-  </div>
-
-  <button class="go" id="go">Shuru karo</button>
-  <div id="status"></div>
-
-  <div id="result">
-    <div id="codeBlock" style="display:none">
-      <div class="sub" style="margin:0">Aapka pairing code</div>
-      <div id="code"></div>
-      <button class="copy" id="copy">Copy</button>
-    </div>
-    <div id="qrWrap"><img id="qrImg" alt="QR code"></div>
-    <ol>
-      <li>WhatsApp kholo, Settings &gt; Linked devices</li>
-      <li id="step2">"Link with phone number instead" dabao, phir code daalo</li>
-      <li id="step3" style="display:none">Camera se ye QR scan karo</li>
-    </ol>
-  </div>
-
-  <p class="warn">creds.json se poora account access hota hai. Ise kisi ke saath share mat karo. Ye tool sirf apne number ke liye use karo.</p>
+<div class="bg" aria-hidden="true">
+  <div class="aurora"><span class="a1"></span><span class="a2"></span><span class="a3"></span><span class="a4"></span></div>
+  <canvas id="fx"></canvas>
 </div>
+<div class="wrap">
+  <header class="reveal" style="animation-delay:.05s">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg></div>
+    <div class="brand">
+      <h1>WhatsApp Creds.json<br><span class="grad">Generator</span></h1>
+      <div class="tag">Secure • Fast • Reliable</div>
+    </div>
+    <div class="server"><b><i></i>Server Online</b><small>All Systems Running</small></div>
+  </header>
+
+  <section class="card reveal" style="animation-delay:.2s">
+    <div class="head">
+      <svg viewBox="0 0 64 72" fill="none"><path d="M32 3 6 13v20c0 17 11 30 26 36 15-6 26-19 26-36V13L32 3Z" stroke="#38bdf8" stroke-width="5" fill="rgba(59,130,246,.15)"/><rect x="21" y="32" width="22" height="18" rx="3" fill="#38bdf8"/><path d="M25 32v-5a7 7 0 0 1 14 0v5" stroke="#38bdf8" stroke-width="4"/><circle cx="32" cy="41" r="3" fill="#06122e"/></svg>
+      <div><h2>WhatsApp <span class="grad">Pairing</span></h2><p>Connect your WhatsApp account to generate creds.json</p></div>
+    </div>
+
+    <div class="tabs">
+      <button id="tabCode" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V4h3M18 4h3v3M21 17v3h-3M6 20H3v-3M7 9h10M7 12h10M7 15h6"/></svg>Pairing Code</button>
+      <button id="tabQr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M17 20h4M14 20v.01"/></svg>QR Code</button>
+    </div>
+
+    <div id="codeForm">
+      <div class="lbl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2Z"/></svg><b>Phone Number</b><span>(Country code ke saath)</span></div>
+      <div class="phone"><input id="num" type="tel" inputmode="numeric" placeholder="Enter WhatsApp Number..." autocomplete="tel"></div>
+      <div class="hint">ⓘ Example: 919876543210</div>
+    </div>
+
+    <button class="go" id="go"><span>⚡</span><span id="goText">Generate Pairing Code</span><span class="arr">›</span></button>
+    <div id="status"></div>
+
+    <div id="result">
+      <div id="codeBlock" style="display:none">
+        <div style="color:var(--muted);font-size:12px">Aapka pairing code</div>
+        <div id="code"></div>
+        <button class="copy" id="copy">Copy</button>
+      </div>
+      <div id="qrWrap"><img id="qrImg" alt="QR code"></div>
+      <ol>
+        <li>WhatsApp kholo, Settings &gt; Linked devices</li>
+        <li id="step2">"Link with phone number instead" dabao, phir code daalo</li>
+        <li id="step3" style="display:none">Camera se ye QR scan karo</li>
+      </ol>
+    </div>
+
+    <div class="secure">🔒 Your information is safe &amp; secure</div>
+  </section>
+
+  <section class="card how reveal" style="animation-delay:.35s">
+    <h3>🚀 How It <span class="grad">Works?</span></h3>
+    <div class="steps">
+      <div class="step"><div class="ic"><em>1</em><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0Z"/></svg></div><b>Enter Number</b><p>Input your WhatsApp number</p></div>
+      <div class="chev">›</div>
+      <div class="step"><div class="ic"><em>2</em><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></div><b>Connect Device</b><p>Enter pairing code in WhatsApp</p></div>
+      <div class="chev">›</div>
+      <div class="step"><div class="ic"><em>3</em><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg></div><b>Credentials Ready</b><p>Download your creds.json</p></div>
+    </div>
+  </section>
+
+  <div class="links reveal" style="animation-delay:.5s">
+    <button data-m="guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2ZM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8Z"/></svg><span><b>Connection Guide</b></span></button>
+    <button data-m="faq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg><span><b>FAQ</b><small>Find Answers</small></span></button>
+    <button data-m="help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-6h3ZM3 19a2 2 0 0 0 2 2h1v-6H3Z"/></svg><span><b>Help &amp; Support</b><small>Contact Us</small></span></button>
+    <button data-m="security"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><rect x="9" y="11" width="6" height="5" rx="1"/><path d="M10 11V9a2 2 0 0 1 4 0v2"/></svg><span><b>Security Notice</b><small>Keep it Private</small></span></button>
+  </div>
+
+  <p class="credit">© 2026 • Created with 💙 by <b>Ayan</b></p>
+</div>
+
+<div class="modal" id="modal"><div class="box"><h4 id="mTitle"></h4><div class="body" id="mBody"></div><button class="close" id="mClose">Close</button></div></div>
 
 <script>
 const $ = (id) => document.getElementById(id)
@@ -81,10 +240,17 @@ let timer = null
 
 function setStatus(text, cls) { $('status').textContent = text; $('status').className = cls || '' }
 
-$('tabCode').onclick = () => { mode = 'code'; $('tabCode').classList.add('active'); $('tabQr').classList.remove('active')
-  $('codeForm').style.display = 'block'; $('step2').style.display='list-item'; $('step3').style.display='none' }
-$('tabQr').onclick = () => { mode = 'qr'; $('tabQr').classList.add('active'); $('tabCode').classList.remove('active')
-  $('codeForm').style.display = 'none'; $('step2').style.display='none'; $('step3').style.display='list-item' }
+function setMode(m) {
+  mode = m
+  $('tabCode').classList.toggle('active', m === 'code')
+  $('tabQr').classList.toggle('active', m === 'qr')
+  $('codeForm').style.display = m === 'code' ? 'block' : 'none'
+  $('step2').style.display = m === 'code' ? 'list-item' : 'none'
+  $('step3').style.display = m === 'qr' ? 'list-item' : 'none'
+  $('goText').textContent = m === 'code' ? 'Generate Pairing Code' : 'Generate QR Code'
+}
+$('tabCode').onclick = () => setMode('code')
+$('tabQr').onclick = () => setMode('qr')
 
 $('go').onclick = async () => {
   clearInterval(timer)
@@ -94,19 +260,20 @@ $('go').onclick = async () => {
   setStatus(mode === 'qr' ? 'QR ban raha hai…' : 'Code ban raha hai…')
   $('go').disabled = true
   try {
-    const body = mode === 'qr' ? { mode: 'qr' } : { mode: 'code', number: $('num').value }
+    const body = mode === 'qr' ? { mode: 'qr' } : { mode: 'code', number: $('num').value.replace(/\D/g, '') }
     const r = await fetch('/api/pair', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     })
-    const data = await r.json()
-    if (!r.ok) throw new Error(data.error || 'Error')
+    let data = {}
+    try { data = await r.json() } catch { throw new Error('Server nahi mila. Ye page apne pairing server se kholo.') }
+    if (!r.ok) throw new Error(data.error || 'Kuch galat ho gaya, dobara try karo.')
     $('result').style.display = 'block'
     setStatus('Wait kar raha hoon…')
     poll(data.id)
   } catch (e) {
-    setStatus(e.message, 'err')
+    setStatus(e instanceof TypeError ? 'Server se connect nahi ho paaya. Internet ya server check karo.' : (e.message || 'Error'), 'err')
     $('go').disabled = false
   }
 }
@@ -116,16 +283,8 @@ function poll(id) {
     try {
       const r = await fetch('/api/status/' + id)
       const d = await r.json()
-
-      if (d.code) {
-        $('codeBlock').style.display = 'block'
-        $('code').textContent = d.code
-      }
-      if (d.qr) {
-        $('qrWrap').style.display = 'block'
-        $('qrImg').src = d.qr
-      }
-
+      if (d.code) { $('codeBlock').style.display = 'block'; $('code').textContent = d.code }
+      if (d.qr) { $('qrWrap').style.display = 'block'; $('qrImg').src = d.qr }
       if (d.status === 'linked') setStatus('Link ho gaya! creds.json bhej raha hoon…', 'ok')
       if (d.status === 'sent') {
         clearInterval(timer); $('go').disabled = false
@@ -141,7 +300,88 @@ function poll(id) {
   }, 2000)
 }
 
-$('copy').onclick = () => navigator.clipboard?.writeText($('code').textContent.replace(/-/g, ''))
+$('copy').onclick = () => {
+  navigator.clipboard?.writeText($('code').textContent.replace(/-/g, ''))
+  $('copy').textContent = 'Copied!'
+  setTimeout(() => $('copy').textContent = 'Copy', 1500)
+}
+
+const info = {
+  guide: ['Connection Guide', '<ol><li>Apna number country code ke saath daalo (jaise 919876543210).</li><li>"Generate Pairing Code" dabao.</li><li>WhatsApp → Settings → Linked devices → Link a device.</li><li>"Link with phone number instead" dabao aur code daalo.</li><li>creds.json aapke "Message yourself" chat me aa jayega.</li></ol>'],
+  faq: ['FAQ', '<b>Code kitni der valid hai?</b><br>Kuch minute — expire ho jaye to dobara generate karo.<br><br><b>QR scan nahi ho raha?</b><br>Screen brightness badhao ya Pairing Code use karo.'],
+  help: ['Help & Support', 'Koi dikkat ho to developer Ayan se contact karo. Error message ka screenshot saath bhejna.'],
+  security: ['Security Notice', 'creds.json se poora account access hota hai. Ise kisi ke saath share mat karo. Ye tool sirf apne number ke liye use karo.']
+}
+document.querySelectorAll('.links button').forEach(b => b.onclick = () => {
+  const [t, h] = info[b.dataset.m]
+  $('mTitle').textContent = t; $('mBody').innerHTML = h; $('modal').classList.add('show')
+})
+$('mClose').onclick = () => $('modal').classList.remove('show')
+
+// Background: hyperspace warp + rotating neon portal + lightning strikes
+;(() => {
+  const c = $('fx'), ctx = c.getContext('2d')
+  let w, h, cx, cy, stars = [], bolts = [], flash = 0, t = 0
+  const dpr = Math.min(window.devicePixelRatio || 1, 2)
+  const N = 260
+  const newStar = (far) => ({ x: (Math.random() - .5) * 2, y: (Math.random() - .5) * 2, z: far ? 1 : Math.random(), pz: 0, hue: 190 + Math.random() * 50 })
+  function resize() {
+    w = innerWidth; h = innerHeight; cx = w / 2; cy = h * .42
+    c.width = w * dpr; c.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    stars = Array.from({ length: N }, () => newStar(false))
+  }
+  function makeBolt() {
+    const pts = [], sx = Math.random() * w
+    let x = sx, y = 0
+    while (y < h * (.5 + Math.random() * .4)) { pts.push([x, y]); x += (Math.random() - .5) * 60; y += 18 + Math.random() * 28 }
+    return { pts, life: 1 }
+  }
+  function portal() {
+    const R = Math.min(w, h) * .32
+    for (let i = 0; i < 4; i++) {
+      const r = R * (.45 + i * .2) + Math.sin(t * 2 + i) * 6
+      const rot = t * (i % 2 ? -.6 : .8) + i
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot); ctx.scale(1, .38 + i * .04)
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 1.55)
+      ctx.strokeStyle = `hsla(${200 + i * 15},100%,65%,${.55 - i * .1})`
+      ctx.lineWidth = 2.2; ctx.shadowBlur = 22; ctx.shadowColor = '#38bdf8'; ctx.stroke()
+      ctx.restore()
+    }
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * .55)
+    g.addColorStop(0, `rgba(125,211,252,${.35 + Math.sin(t * 3) * .1})`); g.addColorStop(1, 'rgba(37,99,235,0)')
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * .55, 0, Math.PI * 2); ctx.fill()
+  }
+  function tick() {
+    t += .016
+    ctx.fillStyle = 'rgba(2,6,23,.28)'; ctx.fillRect(0, 0, w, h)
+    const speed = .006 + (Math.sin(t * .5) + 1) * .006
+    ctx.shadowBlur = 0
+    for (const s of stars) {
+      s.pz = s.z; s.z -= speed
+      if (s.z <= .02) { Object.assign(s, newStar(true)); continue }
+      const k = 1 / s.z, pk = 1 / s.pz, sc = Math.max(w, h) * .5
+      const x = cx + s.x * k * sc * .5, y = cy + s.y * k * sc * .5
+      const px = cx + s.x * pk * sc * .5, py = cy + s.y * pk * sc * .5
+      if (x < -50 || x > w + 50 || y < -50 || y > h + 50) { Object.assign(s, newStar(true)); continue }
+      const a = Math.min(1, (1 - s.z) * 1.4)
+      ctx.strokeStyle = `hsla(${s.hue},100%,75%,${a})`; ctx.lineWidth = (1 - s.z) * 2.6
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(x, y); ctx.stroke()
+    }
+    portal()
+    if (Math.random() < .006 && !bolts.length) { bolts.push(makeBolt()); flash = .35 }
+    bolts = bolts.filter(b => b.life > 0)
+    for (const b of bolts) {
+      ctx.save(); ctx.strokeStyle = `rgba(186,230,253,${b.life})`; ctx.lineWidth = 2
+      ctx.shadowBlur = 25; ctx.shadowColor = '#7dd3fc'
+      ctx.beginPath(); b.pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); ctx.restore()
+      b.life -= .06
+    }
+    if (flash > 0) { ctx.fillStyle = `rgba(147,197,253,${flash * .25})`; ctx.fillRect(0, 0, w, h); flash -= .03 }
+    requestAnimationFrame(tick)
+  }
+  addEventListener('resize', resize); resize(); tick()
+})()
+$('modal').onclick = (e) => { if (e.target.id === 'modal') $('modal').classList.remove('show') }
 </script>
 </body>
 </html>
