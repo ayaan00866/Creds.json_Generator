@@ -14,16 +14,25 @@
          background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
   .card { width:100%; max-width:420px; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:24px; }
   h1 { font-size:20px; margin:0 0 4px; }
-  p.sub { margin:0 0 20px; color:var(--muted); font-size:14px; }
+  p.sub { margin:0 0 16px; color:var(--muted); font-size:14px; }
+
+  .tabs { display:flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:18px; }
+  .tabs button { flex:1; padding:10px; border:0; background:transparent; color:var(--muted); font-size:14px; font-weight:600; cursor:pointer; }
+  .tabs button.active { background:var(--accent); color:#fff; }
+
   label { font-size:13px; color:var(--muted); }
   input { width:100%; margin:6px 0 14px; padding:12px; font-size:16px; border-radius:10px;
           border:1px solid var(--line); background:transparent; color:var(--text); }
-  button { width:100%; padding:12px; font-size:16px; font-weight:600; border:0; border-radius:10px;
+  button.go { width:100%; padding:12px; font-size:16px; font-weight:600; border:0; border-radius:10px;
            background:var(--accent); color:#fff; cursor:pointer; }
-  button:disabled { opacity:.6; cursor:default; }
+  button.go:disabled { opacity:.6; cursor:default; }
+
   #result { display:none; margin-top:20px; text-align:center; }
   #code { font-size:32px; font-weight:700; letter-spacing:3px; font-family:ui-monospace,Menlo,monospace; margin:8px 0; }
-  .copy { width:auto; padding:6px 14px; font-size:13px; background:transparent; color:var(--accent); border:1px solid var(--accent); }
+  #qrWrap { display:none; margin:12px auto; }
+  #qrWrap img { width:220px; height:220px; border-radius:12px; border:1px solid var(--line); background:#fff; padding:8px; }
+
+  .copy { width:auto; padding:6px 14px; font-size:13px; background:transparent; color:var(--accent); border:1px solid var(--accent); border-radius:10px; cursor:pointer; }
   ol { text-align:left; color:var(--muted); font-size:13px; padding-left:18px; line-height:1.6; }
   #status { margin-top:12px; font-size:14px; }
   .err { color:var(--err); } .ok { color:var(--accent); }
@@ -33,21 +42,32 @@
 <body>
 <div class="card">
   <h1>WhatsApp Pairing</h1>
-  <p class="sub">Code se link karo, creds.json aapke WhatsApp par aa jayega.</p>
+  <p class="sub">Code ya QR se link karo, creds.json aapke WhatsApp par aa jayega.</p>
 
-  <label for="num">Phone number (country code ke saath, sirf digits)</label>
-  <input id="num" type="tel" inputmode="numeric" placeholder="919876543210" autocomplete="tel">
-  <button id="go">Pairing code lo</button>
+  <div class="tabs">
+    <button id="tabCode" class="active">Pairing Code</button>
+    <button id="tabQr">QR Code</button>
+  </div>
+
+  <div id="codeForm">
+    <label for="num">Phone number (country code ke saath, sirf digits)</label>
+    <input id="num" type="tel" inputmode="numeric" placeholder="919876543210" autocomplete="tel">
+  </div>
+
+  <button class="go" id="go">Shuru karo</button>
   <div id="status"></div>
 
   <div id="result">
-    <div class="sub" style="margin:0">Aapka pairing code</div>
-    <div id="code"></div>
-    <button class="copy" id="copy">Copy</button>
+    <div id="codeBlock" style="display:none">
+      <div class="sub" style="margin:0">Aapka pairing code</div>
+      <div id="code"></div>
+      <button class="copy" id="copy">Copy</button>
+    </div>
+    <div id="qrWrap"><img id="qrImg" alt="QR code"></div>
     <ol>
-      <li>WhatsApp kholo, Settings, Linked devices</li>
-      <li>"Link with phone number instead" dabao</li>
-      <li>Ye code daalo</li>
+      <li>WhatsApp kholo, Settings &gt; Linked devices</li>
+      <li id="step2">"Link with phone number instead" dabao, phir code daalo</li>
+      <li id="step3" style="display:none">Camera se ye QR scan karo</li>
     </ol>
   </div>
 
@@ -56,31 +76,38 @@
 
 <script>
 const $ = (id) => document.getElementById(id)
-const go = $('go'), statusEl = $('status')
+let mode = 'code'
 let timer = null
 
-function setStatus(text, cls) { statusEl.textContent = text; statusEl.className = cls || '' }
+function setStatus(text, cls) { $('status').textContent = text; $('status').className = cls || '' }
 
-go.onclick = async () => {
+$('tabCode').onclick = () => { mode = 'code'; $('tabCode').classList.add('active'); $('tabQr').classList.remove('active')
+  $('codeForm').style.display = 'block'; $('step2').style.display='list-item'; $('step3').style.display='none' }
+$('tabQr').onclick = () => { mode = 'qr'; $('tabQr').classList.add('active'); $('tabCode').classList.remove('active')
+  $('codeForm').style.display = 'none'; $('step2').style.display='none'; $('step3').style.display='list-item' }
+
+$('go').onclick = async () => {
   clearInterval(timer)
   $('result').style.display = 'none'
-  setStatus('Code ban raha hai…')
-  go.disabled = true
+  $('codeBlock').style.display = 'none'
+  $('qrWrap').style.display = 'none'
+  setStatus(mode === 'qr' ? 'QR ban raha hai…' : 'Code ban raha hai…')
+  $('go').disabled = true
   try {
+    const body = mode === 'qr' ? { mode: 'qr' } : { mode: 'code', number: $('num').value }
     const r = await fetch('/api/pair', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ number: $('num').value })
+      body: JSON.stringify(body)
     })
     const data = await r.json()
     if (!r.ok) throw new Error(data.error || 'Error')
-    $('code').textContent = data.code
     $('result').style.display = 'block'
-    setStatus('Code daalne ka wait kar raha hoon…')
+    setStatus('Wait kar raha hoon…')
     poll(data.id)
   } catch (e) {
     setStatus(e.message, 'err')
-    go.disabled = false
+    $('go').disabled = false
   }
 }
 
@@ -89,14 +116,24 @@ function poll(id) {
     try {
       const r = await fetch('/api/status/' + id)
       const d = await r.json()
+
+      if (d.code) {
+        $('codeBlock').style.display = 'block'
+        $('code').textContent = d.code
+      }
+      if (d.qr) {
+        $('qrWrap').style.display = 'block'
+        $('qrImg').src = d.qr
+      }
+
       if (d.status === 'linked') setStatus('Link ho gaya! creds.json bhej raha hoon…', 'ok')
       if (d.status === 'sent') {
-        clearInterval(timer); go.disabled = false
+        clearInterval(timer); $('go').disabled = false
         $('result').style.display = 'none'
         setStatus(d.message + ' Apna chat ("Message yourself") check karo.', 'ok')
       }
       if (d.status === 'error' || d.status === 'expired') {
-        clearInterval(timer); go.disabled = false
+        clearInterval(timer); $('go').disabled = false
         $('result').style.display = 'none'
         setStatus(d.message, 'err')
       }
