@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WhatsApp Pairing</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --text:#1a1d21; --muted:#667085; --line:#e4e7ec; --accent:#16a34a; --err:#dc2626; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0f1114; --card:#1a1d21; --text:#f1f3f5; --muted:#98a2b3; --line:#2a2f36; --accent:#22c55e; --err:#f87171; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px;
+         background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  .card { width:100%; max-width:420px; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:24px; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  p.sub { margin:0 0 20px; color:var(--muted); font-size:14px; }
+  label { font-size:13px; color:var(--muted); }
+  input { width:100%; margin:6px 0 14px; padding:12px; font-size:16px; border-radius:10px;
+          border:1px solid var(--line); background:transparent; color:var(--text); }
+  button { width:100%; padding:12px; font-size:16px; font-weight:600; border:0; border-radius:10px;
+           background:var(--accent); color:#fff; cursor:pointer; }
+  button:disabled { opacity:.6; cursor:default; }
+  #result { display:none; margin-top:20px; text-align:center; }
+  #code { font-size:32px; font-weight:700; letter-spacing:3px; font-family:ui-monospace,Menlo,monospace; margin:8px 0; }
+  .copy { width:auto; padding:6px 14px; font-size:13px; background:transparent; color:var(--accent); border:1px solid var(--accent); }
+  ol { text-align:left; color:var(--muted); font-size:13px; padding-left:18px; line-height:1.6; }
+  #status { margin-top:12px; font-size:14px; }
+  .err { color:var(--err); } .ok { color:var(--accent); }
+  .warn { margin-top:18px; font-size:12px; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>WhatsApp Pairing</h1>
+  <p class="sub">Code se link karo, creds.json aapke WhatsApp par aa jayega.</p>
+
+  <label for="num">Phone number (country code ke saath, sirf digits)</label>
+  <input id="num" type="tel" inputmode="numeric" placeholder="919876543210" autocomplete="tel">
+  <button id="go">Pairing code lo</button>
+  <div id="status"></div>
+
+  <div id="result">
+    <div class="sub" style="margin:0">Aapka pairing code</div>
+    <div id="code"></div>
+    <button class="copy" id="copy">Copy</button>
+    <ol>
+      <li>WhatsApp kholo, Settings, Linked devices</li>
+      <li>"Link with phone number instead" dabao</li>
+      <li>Ye code daalo</li>
+    </ol>
+  </div>
+
+  <p class="warn">creds.json se poora account access hota hai. Ise kisi ke saath share mat karo. Ye tool sirf apne number ke liye use karo.</p>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id)
+const go = $('go'), statusEl = $('status')
+let timer = null
+
+function setStatus(text, cls) { statusEl.textContent = text; statusEl.className = cls || '' }
+
+go.onclick = async () => {
+  clearInterval(timer)
+  $('result').style.display = 'none'
+  setStatus('Code ban raha hai…')
+  go.disabled = true
+  try {
+    const r = await fetch('/api/pair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ number: $('num').value })
+    })
+    const data = await r.json()
+    if (!r.ok) throw new Error(data.error || 'Error')
+    $('code').textContent = data.code
+    $('result').style.display = 'block'
+    setStatus('Code daalne ka wait kar raha hoon…')
+    poll(data.id)
+  } catch (e) {
+    setStatus(e.message, 'err')
+    go.disabled = false
+  }
+}
+
+function poll(id) {
+  timer = setInterval(async () => {
+    try {
+      const r = await fetch('/api/status/' + id)
+      const d = await r.json()
+      if (d.status === 'linked') setStatus('Link ho gaya! creds.json bhej raha hoon…', 'ok')
+      if (d.status === 'sent') {
+        clearInterval(timer); go.disabled = false
+        $('result').style.display = 'none'
+        setStatus(d.message + ' Apna chat ("Message yourself") check karo.', 'ok')
+      }
+      if (d.status === 'error' || d.status === 'expired') {
+        clearInterval(timer); go.disabled = false
+        $('result').style.display = 'none'
+        setStatus(d.message, 'err')
+      }
+    } catch {}
+  }, 2000)
+}
+
+$('copy').onclick = () => navigator.clipboard?.writeText($('code').textContent.replace(/-/g, ''))
+</script>
+</body>
+</html>
